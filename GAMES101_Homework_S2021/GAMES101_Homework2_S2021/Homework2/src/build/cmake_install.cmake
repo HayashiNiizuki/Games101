@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src
+# Install script for directory: /mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

@@ -6,19 +6,39 @@
 
 #IncludeRegexTransform: 
 
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.cpp
+Triangle.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.hpp
+algorithm
+-
+array
+-
+
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.hpp
 eigen3/Eigen/Eigen
 -
 
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/global.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/global.hpp
 
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.cpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/main.cpp
+iostream
+-
+opencv2/opencv.hpp
+-
+rasterizer.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.hpp
+global.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/global.hpp
+Triangle.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.hpp
+
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.cpp
 algorithm
 -
 vector
 -
 rasterizer.hpp
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.hpp
 opencv2/opencv.hpp
 -
 math.h
@@ -26,15 +46,15 @@ math.h
 iostream
 -
 
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/rasterizer.hpp
 eigen3/Eigen/Eigen
 -
 algorithm
 -
 global.hpp
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/global.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/global.hpp
 Triangle.hpp
-/mnt/d/Coding/Graphics/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.hpp
+/mnt/d/Coding/Games101/GAMES101_Homework_S2021/GAMES101_Homework2_S2021/Homework2/src/Triangle.hpp
 
 /usr/local/include/opencv4/opencv2/calib3d.hpp
 opencv2/core.hpp
@@ -339,8 +359,6 @@ time.h
 /usr/local/include/opencv4/opencv2/core/saturate.hpp
 opencv2/core/cvdef.h
 /usr/local/include/opencv4/opencv2/core/opencv2/core/cvdef.h
-climits
--
 opencv2/core/fast_math.hpp
 /usr/local/include/opencv4/opencv2/core/opencv2/core/fast_math.hpp
 

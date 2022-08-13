@@ -43,7 +43,6 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 
 static bool insideTriangle(float x, float y, const Vector3f* _v) { 
     // TODO: Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    Vector3f *tri = new Vector3f[3];
     bool ju[3];
     for (int i = 0; i < 3; i++) {
         Vector3f ver(x - _v[i].x(), y - _v[i].y(), 0);
@@ -120,7 +119,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     for (int i = 0; i < 3; i++) {
         xMin = std::min(xMin, t.v[i].x());
         xMax = std::max(xMax, t.v[i].x());
-        yMin = std::min(xMin, t.v[i].y());
+        yMin = std::min(yMin, t.v[i].y());
         yMax = std::max(yMax, t.v[i].y());
     }
     // const std::vector<std::pair<float, float>> offset = {{0.25, 0.25}, {0.25, 0.75}, {0.75, 0.25}, {0.75, 0.75}};
@@ -129,26 +128,27 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
     // float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
     // z_interpolated *= w_reciprocal;
-    for (int x = int(xMin); x < int(xMax + 1); x++) {
-        for (int y = int(yMin); y < int(yMax + 1); y++) {
+    for (int x = int(xMin); x <= int(xMax + 1); x++) {
+        for (int y = int(yMin); y <= int(yMax + 1); y++) {
             int cnt = 0;
             int pix = 4;
             int pix2 = pix * pix;
             for (int i = 0; i < pix2; i++) {
-                float cx = x + (i % pix) * (1.0f / pix);
-                float cy = y + (i / pix) * (1.0f / pix);
+                float cx = x + (i % pix) * (1.0f / pix) + 0.5f / pix;
+                float cy = y + (i / pix) * (1.0f / pix) + 0.5f / pix;
                 if (insideTriangle(cx, cy, t.v)) {
                     cnt++;
                 }
             }
             if (cnt) {
-                auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+                auto[alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
                 float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
                 int index = get_index(x, y);
                 if (z_interpolated < depth_buf[index]) {
-                    set_pixel(Vector3f(x, y, 0), t.getColor() * (float(cnt) / pix2) + frame_buf[index] * (float(pix2 - cnt) / pix2));
+                    float weight = float(cnt) / pix2;
+                    set_pixel(Vector3f(x, y, 0), t.getColor() * weight + frame_buf[index] * (1.0f - weight));
                 } 
             }
         }

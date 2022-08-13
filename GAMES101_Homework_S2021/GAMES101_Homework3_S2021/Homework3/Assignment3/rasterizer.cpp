@@ -149,7 +149,7 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-static bool insideTriangle(float x, float y, const Vector4f* _v){
+static bool insideTriangle(int x, int y, const Vector4f* _v){
     Vector3f v[3];
     for(int i=0;i<3;i++)
         v[i] = {_v[i].x(),_v[i].y(), 1.0};
@@ -162,6 +162,19 @@ static bool insideTriangle(float x, float y, const Vector4f* _v){
         return true;
     return false;
 }
+
+// static bool insideTriangle(float x, float y, const Vector4f* _v) {
+//     Vector3f v[3];
+//     for(int i=0;i<3;i++)
+//         v[i] = {_v[i].x(),_v[i].y(), 1.0};
+//     bool ju[3];
+//     for (int i = 0; i < 3; i++) {
+//         Vector3f ver(x - v[i].x(), y - v[i].y(), 0);
+//         Vector3f ver1(v[(i + 1) % 3].x() - v[i].x(), v[(i + 1) % 3].y() - v[i].y(), 0);
+//         ju[i] = ver.cross(ver1).z() > 0;
+//     }
+//     return (ju[0] == ju[1]) && (ju[1] == ju[2]);
+// }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector4f* v){
     float c1 = (x*(v[1].y() - v[2].y()) + (v[2].x() - v[1].x())*y + v[1].x()*v[2].y() - v[2].x()*v[1].y()) / (v[0].x()*(v[1].y() - v[2].y()) + (v[2].x() - v[1].x())*v[0].y() + v[1].x()*v[2].y() - v[2].x()*v[1].y());
@@ -265,7 +278,7 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
 //     for (int i = 0; i < 3; i++) {
 //         xMin = std::min(xMin, t.v[i].x());
 //         xMax = std::max(xMax, t.v[i].x());
-//         yMin = std::min(xMin, t.v[i].y());
+//         yMin = std::min(yMin, t.v[i].y());
 //         yMax = std::max(yMax, t.v[i].y());
 //     }
 //     // TODO: Inside your rasterization loop:
@@ -273,20 +286,26 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
 //     //    * Z is interpolated view space depth for the current pixel
 //     //    * zp is depth between zNear and zFar, used for z-buffer
 
-//     for (int x = int(xMin); x < int(xMax + 1); x++) {
-//         for (int y = int(yMin); y < int(yMax + 1); y++) {
-//             int cnt = 0;
-//             int pix = 2;
-//             int pix2 = pix * pix;
-//             for (int i = 0; i < pix2; i++) {
-//                 float cx = x + (i % pix) * (1.0f / pix);
-//                 float cy = y + (i / pix) * (1.0f / pix);
-//                 if (insideTriangle(cx, cy, t.v)) {
-//                     cnt++;
-//                 }
-//             }
-//             if (cnt) {
-//                 auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+//     std::vector<Eigen::Vector2f> pos{
+//         {0.25,0.25},
+//         {0.75,0.25},
+//         {0.25,0.75},
+//         {0.75,0.75}
+//     };
+//     for (int x = int(xMin); x <= int(xMax + 1); x++) {
+//         for (int y = int(yMin); y <= int(yMax + 1); y++) {
+//             // int cnt = 0;
+//             // int pix = 1;
+//             // int pix2 = pix * pix;
+//             // for (int i = 0; i < pix2; i++) {
+//             //     float cx = x + (i % pix) * (1.0f / pix) + 0.5f / pix;
+//             //     float cy = y + (i / pix) * (1.0f / pix) + 0.5f / pix;
+//             //     if (insideTriangle(cx, cy, t.v)) {
+//             //         cnt++;
+//             //     }
+//             // }
+//             if (insideTriangle(x, y, t.v)) {
+//                 auto[alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
 //                 float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
 //                 float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
 //                 zp *= Z;
@@ -297,10 +316,11 @@ static Eigen::Vector2f interpolate(float alpha, float beta, float gamma, const E
 //                     auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1);
 //                     auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
 //                     auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
-//                     fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+//                     fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
 //                     payload.view_pos = interpolated_shadingcoords;
 //                     auto pixel_color = fragment_shader(payload);
-//                     set_pixel(Eigen::Vector2i(x, y), pixel_color * (float(cnt) / pix2) + frame_buf[index] * (float(pix2 - cnt) / pix2));
+//                     // float weight = float(cnt) / 4.0;
+//                     set_pixel(Eigen::Vector2i(x, y), pixel_color/*  * weight + frame_buf[index] * (1.0f - weight) */);
 //                 }
 //             }
 //         }

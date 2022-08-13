@@ -123,7 +123,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
         yMin = std::min(xMin, t.v[i].y());
         yMax = std::max(yMax, t.v[i].y());
     }
-    const std::vector<std::pair<float, float>> offset = {{0.25, 0.25}, {0.25, 0.75}, {0.75, 0.25}, {0.75, 0.75}};
+    // const std::vector<std::pair<float, float>> offset = {{0.25, 0.25}, {0.25, 0.75}, {0.75, 0.25}, {0.75, 0.75}};
     // If so, use the following code to get the interpolated z value.
     // auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
     // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());

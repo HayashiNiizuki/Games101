@@ -59,6 +59,11 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
     return projection;
 }
 
+Eigen::Matrix4f get_rotation(Vector3f axis, float angle) {
+    Eigen::Matrix4f rotMatrix;
+    return rotMatrix;
+}
+
 int main(int argc, const char **argv) {
     float angle = 0;
     bool command_line = false;

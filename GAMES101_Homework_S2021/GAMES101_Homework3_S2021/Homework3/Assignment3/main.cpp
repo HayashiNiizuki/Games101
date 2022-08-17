@@ -1,12 +1,12 @@
-#include <iostream>
 #include <opencv2/opencv.hpp>
 
-#include "OBJ_Loader.h"
-#include "Shader.hpp"
-#include "Texture.hpp"
-#include "Triangle.hpp"
 #include "global.hpp"
 #include "rasterizer.hpp"
+#include "Triangle.hpp"
+#include "Shader.hpp"
+#include "Texture.hpp"
+#include "OBJ_Loader.h"
+#include "math.h"
 
 #define PIXEL_WIDTH 700
 #define PIXEL_HEIGHT 700
@@ -45,33 +45,22 @@ Eigen::Matrix4f get_model_matrix(float angle) {
 }
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar) {
-    // TODO: Use the same projection matrix from the previous assignments
-    float n = zNear;
-    float f = zFar;
-    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-    float t = -tan((eye_fov / 360) * MY_PI) * (abs(n)); // top
-    float r = t / aspect_ratio;
-
-    Eigen::Matrix4f Mp; //透视矩阵
-    Mp << 
-        n, 0, 0, 0,
-        0, n, 0, 0, 
-        0, 0, n + f, -n * f, 
-        0, 0, 1, 0;
-    Eigen::Matrix4f Mo_tran;           //平移矩阵
-    Mo_tran << 
-        1, 0, 0, 0, 
-        0, 1, 0, 0, // b=-t;
-        0, 0, 1, -(n + f) / 2, 
-        0, 0, 0, 1;
-    Eigen::Matrix4f Mo_scale; //缩放矩阵
-    Mo_scale << 
-        1 / r, 0, 0, 0, 
-        0, 1 / t, 0, 0, 
-        0, 0, 2 / (n - f), 0, 
-        0, 0, 0, 1;
-    projection = (Mo_scale * Mo_tran) * Mp; //投影矩阵
-    //这里一定要注意顺序，先透视再正交;正交里面先平移再缩放；否则做出来会是一条直线！
+    // Use the same projection matrix from the previous assignments
+    float yTop = -zNear * tan(eye_fov * MY_PI / 360);
+    float xRight = aspect_ratio * yTop;
+    Eigen::Matrix4f p2o = Eigen::Matrix4f::Identity();
+    p2o(0, 0) = zNear;
+    p2o(1, 1) = zNear;
+    p2o(2, 2) = zNear + zFar;
+    p2o(3, 3) = 0;
+    p2o(3, 2) = 1;
+    p2o(2, 3) = -zNear * zFar;
+    Eigen::Matrix4f ortho = Eigen::Matrix4f::Identity();
+    ortho(0, 0) = 1 / xRight;
+    ortho(1, 1) = 1 / yTop;
+    ortho(2, 2) = 2 / (zNear - zFar);
+    ortho(2, 3) = -(zNear + zFar) / 2;
+    Eigen::Matrix4f projection = ortho * p2o;
     return projection;
 }
 
@@ -97,7 +86,10 @@ struct light {
 Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload) {
     Eigen::Vector3f return_color = {0, 0, 0};
     if (payload.texture) {
-        // TODO: Get the texture value at the texture coordinates of the current fragment
+        // Get the texture value at the texture coordinates of the current fragment
+        float u = payload.tex_coords.x();
+        float v = payload.tex_coords.y();
+        return_color = payload.texture->getColor(u, v);
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
@@ -122,10 +114,24 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload) 
     Eigen::Vector3f result_color = {0, 0, 0};
 
     for (auto &light : lights) {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
+        // For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
         // components are. Then, accumulate that result on the *result_color* object.
+        Eigen::Vector3f r = light.position - point;
+        auto l = r.normalized();
+        float r2 = r.dot(r);
+        Eigen::Vector3f v = (eye_pos - point).normalized();
+        Eigen::Vector3f h = (v + l).normalized();
+        // 1. Diffuse Reflection
+        Eigen::Vector3f Ld = kd.cwiseProduct(light.intensity / r2) * std::max(0.0f, l.dot(normal));
+        // 2. Specular Term
+        Eigen::Vector3f Ls = ks.cwiseProduct(light.intensity / r2) * std::pow(std::max(0.0f, normal.dot(h)), p);
+        // *. accumulate
+        result_color += (Ld + Ls);
     }
-
+    // 3. Ambient Term
+    Eigen::Vector3f La = ka.cwiseProduct(amb_light_intensity);
+    // *. accumulate
+    result_color += La;
     return result_color * 255.f;
 }
 
@@ -149,10 +155,24 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload) {
 
     Eigen::Vector3f result_color = {0, 0, 0};
     for (auto &light : lights) {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
+        // For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
         // components are. Then, accumulate that result on the *result_color* object.
+        Eigen::Vector3f r = light.position - point;
+        auto l = r.normalized();
+        float r2 = r.dot(r);
+        Eigen::Vector3f v = (eye_pos - point).normalized();
+        Eigen::Vector3f h = (v + l).normalized();
+        // 1. Diffuse Reflection
+        Eigen::Vector3f Ld = kd.cwiseProduct(light.intensity / r2) * std::max(0.0f, l.dot(normal));
+        // 2. Specular Term
+        Eigen::Vector3f Ls = ks.cwiseProduct(light.intensity / r2) * std::pow(std::max(0.0f, normal.dot(h)), p);
+        // *. accumulate
+        result_color += (Ld + Ls);
     }
-
+    // 3. Ambient Term
+    Eigen::Vector3f La = ka.cwiseProduct(amb_light_intensity);
+    // *. accumulate
+    result_color += La;
     return result_color * 255.f;
 }
 
@@ -228,7 +248,16 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload &payload) {
     // dV = kh * kn * (h(u,v+1/h)-h(u,v))
     // Vector ln = (-dU, -dV, 1)
     // Normal n = normalize(TBN * ln)
-
+    float x(normal.x()), y(normal.y()), z(normal.z());
+    Eigen::Vector3f t = {x * y / std::sqrt(x * x + z * z), std::sqrt(x * x + z * z), z * y / std::sqrt(x * x + z * z)};
+    Eigen::Vector3f b = normal.cross(t);
+    Eigen::Matrix3f TBN;
+    TBN <<
+        t.x(), b.x(), normal.x(),
+        t.y(), b.y(), normal.y(),
+        t.z(), b.z(), normal.z()
+    ;
+    
     Eigen::Vector3f result_color = {0, 0, 0};
     result_color = normal;
 

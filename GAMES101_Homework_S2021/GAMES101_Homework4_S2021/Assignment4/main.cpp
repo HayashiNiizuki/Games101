@@ -24,7 +24,7 @@ void naive_bezier(const std::vector<cv::Point2f> &points, cv::Mat &window) {
 }
 
 cv::Point2f recursive_bezier(const std::vector<cv::Point2f> &control_points, double t) {
-    // TODO: Implement de Casteljau's algorithm
+    // Implement de Casteljau's algorithm
     auto &p0 = control_points[0];
     auto &p1 = control_points[1];
     auto &p2 = control_points[2];
@@ -40,38 +40,44 @@ cv::Point2f recursive_bezier(const std::vector<cv::Point2f> &control_points, dou
     return t * p20 + (1 - t) * p21;
 }
 
-void bezier(const std::vector<cv::Point2f> &control_points, cv::Mat &window) {
-    // TODO: Iterate through all t = 0 to t = 1 with small steps, and call de Casteljau's recursive Bezier algorithm.
-    for (double t = 0.0; t <= 1.0; t += 0.001) {
-        cv::Point2f point = recursive_bezier(control_points, t);
-        window.at<cv::Vec3b>(point.y, point.x)[1] = 255;
-        printf("%f\t%f\t%f\t\n", t, point.x, point.y);
+cv::Vec3b maxColor(const cv::Vec3b &a, const cv::Vec3b &b) {
+    cv::Vec3b c(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]));
+    return c;
+}
 
-        float pos_x = (point.x - floor(point.x)) > 0.5 ? 1 : -1;
-        float pos_y = (point.y - floor(point.y)) > 0.5 ? 1 : -1;
+void bezier(const std::vector<cv::Point2f> &control_points, cv::Mat &window, bool ifAntiAlias) {
+    // Iterate through all t = 0 to t = 1 with small steps, and call de Casteljau's recursive Bezier algorithm.
+    for (double t = 0.0; t <= 1.0; t += 0.0005) {
+        cv::Point2f center = recursive_bezier(control_points, t);
+        cv::Vec3b color(126, 36, 131);
+        // bool ifAntiAlias = true;
+        if (ifAntiAlias) {
 
-        std::vector<cv::Point2f> vec;
-        vec.push_back(cv::Point2f(floor(point.x + pos_x), floor(point.y)));
-        vec.push_back(cv::Point2f(floor(point.x), floor(point.y + pos_y)));
-        vec.push_back(cv::Point2f(floor(point.x + pos_x), floor(point.y + pos_y)));
+            float pos_x = (center.x - floor(center.x)) > 0.5 ? 1 : -1;
+            float pos_y = (center.y - floor(center.y)) > 0.5 ? 1 : -1;
 
-        auto d = cv::Point2f(point.x - floor(point.x) - 0.5, point.y - floor(point.y) - 0.5);
-        float dis = sqrt(d.x * d.x + d.y * d.y);
+            cv::Point2f xBias(center.x + pos_x, center.y), yBias(center.x, center.y + pos_y), xyBias(center.x + pos_x, center.y + pos_y);
 
-        for (const auto &p : vec) {
-            float cx = p.x + 0.5;
-            float cy = p.y + 0.5;
+            auto biasX = fabs(center.x - floor(center.x) - 0.5);
+            auto biasY = fabs(center.y - floor(center.y) - 0.5);
 
-            auto d1 = cv::Point2f(cx - floor(point.x) - 0.5, cy - floor(point.y) - 0.5);
-            float l = sqrt(d1.x * d1.x + d1.y * d1.y);
-            
-            auto color = window.at<cv::Vec3b>(cy, cx)[1];
-            window.at<cv::Vec3b>(cy, cx)[1] = std::max((int)color, (int)(255 * (dis / l)));
+            float centerPercent = sqrt((1 - biasX) * (1 - biasX) + (1 - biasY) * (1 - biasY));
+            float xBiasPercent = sqrt(biasX * biasX + (1 - biasY) * (1 - biasY));
+            float yBiasPercent = sqrt((1 - biasX) * (1 - biasX) + biasY * biasY);
+            float xyBiasPercent = sqrt(biasX * biasX + biasY * biasY);
+
+            window.at<cv::Vec3b>(center.y, center.x) = maxColor((centerPercent * color), window.at<cv::Vec3b>(center.y, center.x));
+            window.at<cv::Vec3b>(xBias.y, xBias.x) = maxColor((xBiasPercent * color), window.at<cv::Vec3b>(xBias.y, xBias.x));
+            window.at<cv::Vec3b>(yBias.y, yBias.x) = maxColor((yBiasPercent * color), window.at<cv::Vec3b>(yBias.y, yBias.x));
+            window.at<cv::Vec3b>(xyBias.y, xyBias.x) = maxColor((xyBiasPercent * color), window.at<cv::Vec3b>(xyBias.y, xyBias.x));
+        } else {
+            window.at<cv::Vec3b>(center.y, center.x)[1] = 255;
         }
+        // printf("%f\t%f\t%f\t\n", t, point.x, point.y);
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     cv::Mat window = cv::Mat(700, 700, CV_8UC3, cv::Scalar(0));
     cv::cvtColor(window, window, cv::COLOR_BGR2RGB);
     cv::namedWindow("Bezier Curve", cv::WINDOW_AUTOSIZE);
@@ -79,6 +85,12 @@ int main() {
     cv::setMouseCallback("Bezier Curve", mouse_handler, nullptr);
 
     int key = -1;
+    bool ifAntiAlias;
+    if (argc == 1) {
+        ifAntiAlias = (argv[0] == "true");
+    } else {
+        ifAntiAlias = true;
+    }
     while (key != 27) {
         for (auto &point : control_points) {
             cv::circle(window, point, 3, {255, 255, 255}, 3);
@@ -88,9 +100,12 @@ int main() {
             if (false)
                 naive_bezier(control_points, window);
             else
-                   bezier(control_points, window);
+                bezier(control_points, window, ifAntiAlias);
             cv::imshow("Bezier Curve", window);
-            cv::imwrite("my_bezier_curve.png", window);
+            if (ifAntiAlias)
+                cv::imwrite("my_bezier_curve_alias.png", window);
+            else
+                cv::imwrite("my_bezier_curve_normal.png", window);
             key = cv::waitKey(0);
 
             return 0;

@@ -2,8 +2,7 @@
 // Created by LEI XU on 5/16/19.
 //
 
-#ifndef RAYTRACING_BVH_H
-#define RAYTRACING_BVH_H
+#pragma once
 
 #include <atomic>
 #include <vector>
@@ -60,9 +59,7 @@ public:
         left = nullptr;right = nullptr;
         object = nullptr;
     }
+    bool isLeaf() ;
 };
 
-
-
-
-#endif //RAYTRACING_BVH_H
+//RAYTRACING_BVH_H

@@ -59,7 +59,7 @@ public:
         left = nullptr;right = nullptr;
         object = nullptr;
     }
-    bool isLeaf() ;
+    bool isLeaf();
 };
 
 //RAYTRACING_BVH_H

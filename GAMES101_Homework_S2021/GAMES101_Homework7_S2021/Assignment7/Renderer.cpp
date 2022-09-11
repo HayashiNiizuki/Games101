@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <thread>
 #include "Scene.hpp"
 #include "Renderer.hpp"
 
@@ -10,13 +11,10 @@
 inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
 
 const float EPSILON = 0.00001;
+int renderProgress;
+std::mutex mutex;
 
-// The main render function. This where we iterate over all pixels in the image,
-// generate primary rays and cast these rays into the scene. The content of the
-// framebuffer is saved to a file.
-void Renderer::Render(const Scene& scene)
-{
-    std::vector<Vector3f> framebuffer(scene.width * scene.height);
+static void RenderThread(const Scene &scene, std::vector<Vector3f> &frameBuffer, int yStart, int yEnd, int spp) {
 
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
@@ -24,23 +22,60 @@ void Renderer::Render(const Scene& scene)
     int m = 0;
 
     // change the spp value to change sample ammount
-    int spp = 16;
-    std::cout << "SPP: " << spp << "\n";
-    for (uint32_t j = 0; j < scene.height; ++j) {
+    for (uint32_t j = yStart; j < yEnd; ++j) {
         for (uint32_t i = 0; i < scene.width; ++i) {
             // generate primary ray direction
-            float x = (2 * (i + 0.5) / (float)scene.width - 1) *
-                      imageAspectRatio * scale;
-            float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
-
-            Vector3f dir = normalize(Vector3f(-x, y, 1));
             for (int k = 0; k < spp; k++){
-                framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
+                float x = (2 * (i + get_random_float()) / (float)scene.width - 1) *
+                        imageAspectRatio * scale;
+                float y = (1 - 2 * (j + get_random_float()) / (float)scene.height) * scale;
+
+                Vector3f dir = normalize(Vector3f(-x, y, 1));
+                frameBuffer[j * scene.height + i] += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
             }
-            m++;
+            // if (frameBuffer[j * scene.height + i].x > 1)
+            //     std::cout << frameBuffer[j * scene.height + i].x << std::endl;
+            // if (frameBuffer[j * scene.height + i].y > 1)
+            //     std::cout << frameBuffer[j * scene.height + i].y << std::endl;
+            // if (frameBuffer[j * scene.height + i].z > 1)
+            //     std::cout << frameBuffer[j * scene.height + i].z << std::endl;
         }
-        UpdateProgress(j / (float)scene.height);
+        mutex.lock();
+        renderProgress++;
+        UpdateProgress(renderProgress / (float)scene.height);
+        mutex.unlock();
     }
+}
+
+// The main render function. This where we iterate over all pixels in the image,
+// generate primary rays and cast these rays into the scene. The content of the
+// framebuffer is saved to a file.
+void Renderer::Render(const Scene& scene)
+{
+    std::vector<Vector3f> framebuffer(scene.width * scene.height);
+    renderProgress = 0;
+
+    int spp = 64;
+    std::cout << "SPP: " << spp << "\n";
+
+    // referring https://github.com/Quanwei1992/GAMES101/blob/master/07/Renderer.cpp
+    mutex.unlock();
+    int numThreads = std::thread::hardware_concurrency();
+    int lineEveryThread = scene.height / numThreads + (scene.height % numThreads > 0);
+    std::cout << "Threads: " << numThreads << std::endl;
+
+    std::vector<std::thread> workers;
+    for (int i = 0; i < numThreads; i++) {
+        int yStart = i * lineEveryThread;
+        int yEnd = std::min(yStart + lineEveryThread, scene.height);
+        std::cout << "Thread id: " << i << " start " << yStart << " end " << yEnd << std::endl;
+        workers.push_back(std::thread(RenderThread, std::ref(scene), std::ref(framebuffer), yStart, yEnd, spp));
+    }
+
+    for (auto &x : workers) {
+        x.join();
+    }
+
     UpdateProgress(1.f);
 
     // save framebuffer to file

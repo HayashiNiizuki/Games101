@@ -64,6 +64,7 @@ public:
         left = nullptr;right = nullptr;
         object = nullptr;
     }
+    bool isLeaf();
 };
 
 

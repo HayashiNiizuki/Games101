@@ -7,7 +7,7 @@
 
 #include "Vector.hpp"
 
-enum MaterialType { DIFFUSE};
+enum MaterialType { DIFFUSE, MICROFACET };
 
 class Material{
 private:
@@ -85,16 +85,46 @@ private:
         return a.x * B + a.y * C + a.z * N;
     }
 
+    Vector3f importanceSampling(const Vector3f &wo, const Vector3f &normal) {
+        double r0 = get_random_float();
+        double r1 = get_random_float();
+        double a2 = roughness * roughness;
+        double theta = acos(sqrt((1 - r0) / ((a2 - 1) * r0 + 1)));
+        double phi = 2 * M_PI * r1;
+        
+        // double x = sin(theta) * cos(phi);
+        // double y = cos(theta);
+        // double z = sin(theta) * sin(phi);
+        double x = sin(theta) * cos(phi);
+        double y = sin(theta) * sin(phi);
+        double z = cos(theta);
+        Vector3f wm = Vector3f(x, y, z);
+        Vector3f wm_w = toWorld(wm, normal);
+        return reflect(wo, wm_w);
+    }
+
+    double importancePDF(const Vector3f &wo, const Vector3f &wi, const Vector3f &normal) {
+        Vector3f h = normalize(wo + wi);
+        double cosTheta = dotProduct(normal, h);
+        double D = distributionGGX(normal, h, roughness);
+        return (D * cosTheta) / (4.0f * dotProduct(wo, h));
+    }
+
 public:
     MaterialType m_type;
     //Vector3f m_color;
     Vector3f m_emission;
     float ior;
-    Vector3f Kd, Ks;
+    // Vector3f Kd, Ks;
+    Vector3f albedo;
+    Vector3f F0;
     float specularExponent;
+    float roughness;
+    float metallic;
     //Texture tex;
 
     inline Material(MaterialType t=DIFFUSE, Vector3f e=Vector3f(0,0,0));
+    inline Material(MaterialType t, const Vector3f &e, const Vector3f &albedo, float roughness, float metallic);
     inline MaterialType getType();
     //inline Vector3f getColor();
     inline Vector3f getColorAt(double u, double v);
@@ -116,6 +146,16 @@ Material::Material(MaterialType t, Vector3f e){
     m_emission = e;
 }
 
+Material::Material(MaterialType t, const Vector3f &e, const Vector3f &albedo, float roughness, float metallic) {
+    m_type = t;
+    m_emission = e;
+    this->albedo = albedo;
+    this->roughness = roughness;
+    this->metallic = metallic;
+    Vector3f base(0.04);
+    F0 = lerp(base, albedo, metallic);
+}
+
 MaterialType Material::getType(){return m_type;}
 ///Vector3f Material::getColor(){return m_color;}
 Vector3f Material::getEmission() {return m_emission;}
@@ -128,35 +168,38 @@ Vector3f Material::getColorAt(double u, double v) {
     return Vector3f();
 }
 
+Vector3f Material::sample(const Vector3f &wi, const Vector3f &N) {
+    switch (m_type) {
+    case DIFFUSE: {
+        // uniform sample on the hemisphere
+        float x_1 = get_random_float(), x_2 = get_random_float();
+        float z = std::fabs(1.0f - 2.0f * x_1);
+        float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+        Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
+        return toWorld(localRay, N);
 
-Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
-    switch(m_type){
-        case DIFFUSE:
-        {
-            // uniform sample on the hemisphere
-            float x_1 = get_random_float(), x_2 = get_random_float();
-            float z = std::fabs(1.0f - 2.0f * x_1);
-            float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
-            Vector3f localRay(r*std::cos(phi), r*std::sin(phi), z);
-            return toWorld(localRay, N);
-            
-            break;
-        }
+        break;
     }
-    return Vector3f();
+    case MICROFACET: {
+        return importanceSampling(wi, N);
+    }
+    }
+    return Vector3f(0.f);
 }
 
-float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
-    switch(m_type){
-        case DIFFUSE:
-        {
-            // uniform sample probability 1 / (2 * PI)
-            if (dotProduct(wo, N) > 0.0f)
-                return 0.5f / M_PI;
-            else
-                return 0.0f;
-            break;
-        }
+float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N) {
+    switch (m_type) {
+    case DIFFUSE: {
+        // uniform sample probability 1 / (2 * PI)
+        if (dotProduct(wo, N) > 0.0f)
+            return 0.5f / M_PI;
+        else
+            return 0.0f;
+        break;
+    }
+    case MICROFACET: {
+        return std::max((double)0.0001f, importancePDF(wo, wi, N));
+    }
     }
     return 0.0f;
 }
@@ -168,8 +211,27 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             // calculate the contribution of diffuse   model
             float cosalpha = dotProduct(N, wo);
             if (cosalpha > 0.0f) {
-                Vector3f diffuse = Kd / M_PI;
+                Vector3f diffuse = albedo / M_PI;
                 return diffuse;
+            }
+            else
+                return Vector3f(0.0f);
+            break;
+        }
+        case MICROFACET:
+        {
+            double cos1 = std::max(dotProduct(N, wo), 0.0f);
+            double cos2 = std::max(dotProduct(N, wi), 0.0f);
+            if (cos1 > 0.0f && cos2 > 0.0f) {
+                Vector3f h = (wi + wo).normalized();
+                double k = pow((roughness + 1.0f), 2) / 8.0f;
+                double distribute = distributionGGX(N, h, roughness);
+                double geometry = geometrySmith(N, wo, wi, k);
+                
+                Vector3f fresnel = fresnelSchlick(cos1, F0);
+                Vector3f Ks = fresnel;
+                Vector3f Kd = (Vector3f(1.0f) - Ks) * (1.0f - metallic);
+                return Kd * albedo / M_PI + Ks * distribute * geometry / std::max((double)0.0001f, (4.0f * cos1 * cos2));
             }
             else
                 return Vector3f(0.0f);

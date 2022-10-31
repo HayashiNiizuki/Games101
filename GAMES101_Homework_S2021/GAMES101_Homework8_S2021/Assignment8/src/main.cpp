@@ -24,7 +24,6 @@ int main(int argc, char **argv) {
     int opt;
 
     while ((opt = getopt(argc, argv, "s:l:t:m:e:h:f:r:c:a:p:")) != -1) {
-        std::cout << opt << std::endl;
         switch (opt) {
         case 'm':
             config.mass = atof(optarg);
@@ -53,7 +52,6 @@ int main(int argc, char **argv) {
     // init viewer
     viewer.init();
 
-    std::cout << "here 7\n";
     // start viewer
     viewer.start();
 

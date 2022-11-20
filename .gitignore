@@ -1,29 +1,22 @@
-
 .vscode
-GAMES101_Homework_S2021/.vscode/
-Lecture/
 .backup/
+Lecture/
 
-Assignments/GAMES101_Homework1_S2021/.vscode/
+# GAMES101_Homework_S2021/.vscode/
+# Assignments/GAMES101_Homework1_S2021/.vscode/
+# Assignments/GAMES101_Homework2_S2021/.vscode/
+# Assignments/GAMES101_Homework3_S2021/.vscode/
+# Assignments/GAMES101_Homework4_S2021/.vscode/
+# Assignments/GAMES101_Homework5_S2021/.vscode/
+# Assignments/GAMES101_Homework6_S2021/.vscode/
+# Assignments/GAMES101_Homework7_S2021/.vscode/
+# Assignments/GAMES101_Homework8_S2021/.vscode/
+
 Assignments/GAMES101_Homework1_S2021/build/
-
-Assignments/GAMES101_Homework2_S2021/.vscode/
 Assignments/GAMES101_Homework2_S2021/build/
-
-Assignments/GAMES101_Homework3_S2021/.vscode/
 Assignments/GAMES101_Homework3_S2021/build/
-
-Assignments/GAMES101_Homework4_S2021/.vscode/
 Assignments/GAMES101_Homework4_S2021/build/
-
-Assignments/GAMES101_Homework5_S2021/.vscode/
 Assignments/GAMES101_Homework5_S2021/build/
-
-Assignments/GAMES101_Homework6_S2021/.vscode/
 Assignments/GAMES101_Homework6_S2021/build/
-
-Assignments/GAMES101_Homework7_S2021/.vscode/
 Assignments/GAMES101_Homework7_S2021/build/
-
-Assignments/GAMES101_Homework8_S2021/.vscode/
 Assignments/GAMES101_Homework8_S2021/build/
